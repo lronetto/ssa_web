@@ -6,7 +6,7 @@
 function conectar(){
 $host="localhost";
 $user="lronetto1";
-$senha="********";
+$senha="********"; 
 $conexao=mysql_connect($host,$user,$senha);
 mysql_select_db("lronetto_ssa",$conexao);
 return $conexao;
