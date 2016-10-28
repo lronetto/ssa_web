@@ -11,10 +11,14 @@ $id=$_POST['id'];
 
 //echo "act=$act mac=$mac";
 
-
+//echo "teste";
 $ap=0;
 conectar(); 
-
+/*$res=mysql_query("select * from access where pass=PASSWORD('$pass') and disp=0");
+$row=mysql_fetch_array($res);
+if(mysql_num_rows($res)){
+	$ap=1;
+	}*/
 function atu($mac){
 	$id=mac_id($mac);
 	$sql="select var_atu.disp, var_conf.tempo,var_conf.disp_var,var_conf.media,disp.mac,var_atu.id from var_atu ";
@@ -53,15 +57,6 @@ function mac_id($mac){
 	else return 0;
 		
 }
-function var_valUT($var){
-	$res=mysql_query("select * from var_val where var=$var order by date DESC limit 1");
-	if($res){
-		if(mysql_num_rows($res)){
-			$row=mysql_fetch_array($res);
-			return $row['val'];
-			}
-		}
-}
 function var_id($disp,$var){
 	$res=mysql_query("select * from var_conf where disp=$disp and disp_var=$var");
 	if($res){
@@ -94,7 +89,17 @@ function n_cnt($disp){
 		}
 	else '0';
 }
-//inicia o gateway
+if($act=="teste") echo "teste";
+
+if($act=="cnt"){
+	if($type==5){
+		mysql_query("update disp set cnt=cnt+1 where Id=$id");
+	}else{
+		//conectar();
+		$cnt=n_cnt($mac)+1;
+		mysql_query("update disp set cnt=$cnt where mac='$mac'");
+		}
+	}
 if($act=="init"){
 	if($type==5){
 		if(($id=mac_id($mac))==0){
@@ -107,7 +112,54 @@ if($act=="init"){
 		}
 	}
 }
-//recebe dados das variaveis e retorna se tiver atualização do dispositivo
+	/*
+	$qtdvar=$_POST['qtdvar'];
+	if($qtdvar){
+		$var_tipo=array();
+		$var_tempo=array();
+		$var_nome=array();
+		for($i=0;$i<$qtdvar;$i++){
+			$var_tipo[$i]=$_POST['vart'.$i];
+			$var_tempo[$i]=$_POST['vartp'.$i];
+			$var_nome[$i]=$_POST['varn'.$i];
+		}
+	}
+	
+	$res=mysql_query("select * from disp where mac='$mac'");
+	if(mysql_num_rows($res)){
+		$cnt=n_cnt($mac)+1;
+		mysql_query("update disp set cnt=$cnt, rssi='$rssi' where mac='$mac'");
+		$res=mysql_query("select * from disp where mac='$mac'");
+		$row=mysql_fetch_array($res);
+		$rssi=$row['Id'];
+		echo "u;".$row['Id'].";";
+		}
+	else{
+		mysql_query("insert into disp(tipo,local,mac,rssi) values($tipo,1,'$mac','$rssi')");
+		$disp=mysql_insert_id();
+		$str="";
+		for($i=0;$i<$qtdvar;$i++){
+			$sql="insert into var_conf(disp,nome,ativo,tempo,disp_var,var_tipo) values($disp,'".$var_nome[$i]."',1,".$var_tempo[$i].",$i,".$var_tipo[$i].")";
+			//echo $sql;
+			mysql_query("insert into var_conf(disp,nome,ativo,tempo,disp_var,var_tipo) values($disp,'".$var_nome[$i]."',1,".$var_tempo[$i].",$i,".$var_tipo[$i].")");
+			$var_id[$i]=mysql_insert_id();
+			$str.=";".$var_id[$i];
+			}
+		echo "i;".$disp.$str.";";
+		}  */
+if($act=="var"){
+		$qtd=$_POST['qtd'];
+		$var_id=array();
+		$var_val=array();
+		for($i=0;$i<$qtd;$i++){
+			$var_id[$i]=$_POST['vari'.$i];
+			$var_val[$i]=$_POST['varv'.$i];
+			$sql="insert into var_val(date,var,val) values(NOW(),".$var_id[$i].",'".$var_val[$i]."');";
+			mysql_query($sql);
+		}
+		echo "ok";
+		
+	}
 if($act=="var1"){
 	$qtd=$_POST['qtd'];
 	$type=$_POST['disptype'];
@@ -122,31 +174,41 @@ if($act=="var1"){
 		$val=$_POST['val'.$i];
 		$type=$_POST['type'.$i];
 		$media=$_POST['media'.$i];
-		
 		if(!($id_var=var_id($id,$var_id))){
 			$sql="insert into var_conf(disp,ativo,tempo,disp_var,var_tipo,nome,media) values($id,1,$tempo,$var_id,$type,'variavel nova',$media)";
 			mysql_query($sql);
 			$id_var=mysql_insert_id();
 			}
-		
-		//$valant=var_valUT($id_var);
-		//$desl=80;
-		//if($val>$valant*(1+$desl/100) | $val<$valant/(1-$desl/100)) $val=$valant;
+		mysql_query("update disp set atu=NOW(), cnt=cnt+1 where Id=$id");
 		$sql="insert into var_val(var,date,val) values($id_var,NOW(),'$val')";
 		mysql_query($sql);
-		
-		mysql_query("update disp set atu=NOW(), cnt=cnt+1 where Id=$id");
 		}
 	atu($mac);
 	}
-//recebe o rssi do dispositivo
 if($act=="rssi"){
 	$rssi=$_POST['rssi'];
 	mysql_query("update disp set rssi=-$rssi where mac='$mac'");
 	atu($mac);
 	
 }
-//recebe o estado da entrada digital do dispositivo
+if($act=="ativo"){
+	$bat=$_POST['bat'];
+	mysql_query("update disp set cnt=cnt+1, bat_val='$bat', atu=NOW() , rssi=$rssi where Id=$id");
+	$res=mysql_query("select * from var_atu where disp=$id");
+	$str="n";
+	if($qtd=mysql_num_rows($res)){
+		$str="s;".$qtd.";";
+		while($row=mysql_fetch_array($res)){
+			mysql_query("delete from var_atu where Id=".$row['Id']);
+			$sql="select * from var_conf where disp_var=".$row['var'];
+			//echo $sql;
+			$res1=mysql_query("select * from var_conf where Id=".$row['var']);
+			$row1=mysql_fetch_array($res1);
+			$str.=$row1['disp_var'].";".$row1['nome'].";".$row1['tempo'].";".$row1['ativo'].";".$row1['Id'].";";
+			}
+		}
+	echo $str;
+}
 if($act=="est"){
 	$out=$_POST['out'];
 	$est=$_POST['est'];
@@ -166,7 +228,6 @@ if($act=="est"){
 		//mysql_query("insert into disp(tipo,");	
 		}
 }
-//atualiza a tabela de dispositivos em cada gateway
 if($act=="discover"){
 	$qtd=$_POST['qtd'];
 	$id_gate=mac_id($mac);
@@ -187,23 +248,6 @@ if($act=="discover"){
 		//verifica se tem alguma atualização para ser enviada para o dispositivo
 		
 	mysql_query("update disp set cnt=cnt+1, atu=NOW() where Id=$id_gate");
-	echo '$$ok&';
-}
-if($act=="perca"){
-	$perca=$_POST['perca'];
-	$id=mac_id($mac);
-	$res=mysql_query("select * from var_conf where var_tipo=7 and disp=$id");
-	if($res){
-		if(mysql_num_rows($res)){
-			$row=mysql_fetch_arrow($res);
-			mysql_query("insert into var_val(var,date,val) values(".$row['Id'].",NOW(),'$perca')");
-		}
-		else{
-			mysql_query("insert into var_conf(disp,nome,var_tipo) values($id,'Perca dados',7)");
-			$id_var=mysql_insert_id();
-			mysql_query("insert into var_val(var,date,val) values($id_var,NOW(),'$perca')");
-		}
-	}
 	echo '$$ok&';
 }
 ?>
