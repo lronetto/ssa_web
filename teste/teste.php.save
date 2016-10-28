@@ -1,0 +1,11 @@
+<?php
+require('conf/conexao.php');
+require_once('conf/Login.php');
+$act=$_POST['act'];
+switch($act){
+	case "init":
+		
+conectar('lronetto_ssa');
+
+$res=mysql_query("
+while($row=mysql_fetch_array($res))

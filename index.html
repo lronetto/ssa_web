@@ -1,0 +1,307 @@
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <title>Sistema de sensoriamento e acionamento</title>
+    <link rel="stylesheet" href="js/jqwidgets/jqwidgets/styles/jqx.base.css" type="text/css" />
+    <script type="text/javascript" src="js/jqwidgets/scripts/jquery-1.11.1.min.js"></script>
+    <script type="text/javascript" src="js/jqwidgets4_1_2/jqxcore.js"></script>
+    <script type="text/javascript" src="js/jqwidgets4_1_2/jqxdata.js"></script>
+    <script type="text/javascript" src="js/jqwidgets4_1_2/jqxdraw.js"></script>
+    <script type="text/javascript" src="js/jqwidgets4_1_2/jqxchart.core.js"></script>
+    <script type="text/javascript" src="js/jqwidgets4_1_2/jqxchart.rangeselector.js"></script>
+    <script type="text/javascript" src="js/jqwidgets4_1_2/jqxloader.js"></script>
+    <script type="text/javascript" src="grafico.js"></script> 
+
+	<script>
+	// Quando carregado a pÃ¡gina
+
+$(document).ready(
+function() {
+	var graf_title,graf_desc,graf_var_unid,graf_var_nome;
+	$('#disp_tab').hide();
+	$('#var_tab').hide();
+	$('#varconf_tab').hide();
+	$('#var_var1').hide();
+	$('#disp_m').click(function(){
+		$('#var_tab').hide();
+		$('#varconf_tab').hide();
+		$('#disp_tab').show();
+		$('#disp_dat').load('disp_func.php?act=dat');
+		});
+	$('#disp_atu').click(function(){
+		$('#disp_dat').load('disp_func.php?act=dat');
+		});
+	$('#disp_salva').click(function(){
+		//alert($('#disp_id').val());
+		$.get('disp_func.php',{act: 'atu', id: $('#disp_id').val(),nome: $('#disp_nome').val()},
+			function(resp){
+				alert(resp);
+			});
+		$('#disp_dat').load('disp_func.php?act=dat');
+		$('#disp_nome').val('');
+	});
+	
+	$('#varconf_disp').change(function(){
+		$('#varconf_dat').load('varconf_func.php?act=tab&disp='+$('#varconf_disp').val());
+	})
+	$('#varconf_m').click(function(){
+		$('#var_tab').hide();
+		$('#disp_tab').hide();
+		$('#varconf_tab').show();
+		$('#varconf_disp').load('varconf_func.php?act=disp');
+		$('#varconf_dat').load('varconf_func.php?act=tab&disp='+$('#varconf_disp').val());
+		});
+	$('#varconf_bbusc').click(function(){
+		//alert('varconf_func.php?act=tab&disp='+$('#varconf_disp').val());
+		$('#varconf_dat').load('varconf_func.php?act=tab&disp='+$('#varconf_disp').val());
+		})
+	$('#varconf_salva').click(function(){
+		$.get('varconf_func.php',{act: 'salva', 
+												id: 	$('#varconf_id').val(), 
+												nome: 	$('#varconf_nome').val(),
+												tempo: 	$('#varconf_tempo').val(),
+												media:	$('#varconf_media').val()},
+												function(resp){
+													//alert(resp);
+													});
+		$('#varconf_nome').val('');
+		$('#varconf_tempo').val('');
+		$('#varconf_media').val('');
+		$('#varconf_dat').load('varconf_func.php?act=tab&disp='+$('#varconf_disp').val());
+		})
+	$('#var_m').click(function(){
+		$('#var_tab').show();
+		$('#disp_tab').hide();
+		$('#varconf_tab').hide();
+		$('#var_disp').load('varconf_func.php?act=disp');
+		});
+	$('#var_disp').change(function(){
+		$('#var_qtd').load('var_func.php?act=qtd&disp='+$('#var_disp').val());
+		$('#var_var').load('var_func.php?act=var&disp='+$('#var_disp').val());
+		$('#var_var1').load('var_func.php?act=var&disp='+$('#var_disp').val());
+		});
+	$('#var_qtd').change(function(){
+		if($('#var_qtd').val()>1)
+			$('#var_var1').show();
+		else
+			$('#var_var1').hide();
+		});
+	$('#var_var').change(function(){
+		//alert("oi");
+		//grafico_bat($('#var_var').val(),1,'minute',6,$('#var_graf'));
+		var qtd=$('#var_qtd').val();
+		if(qtd==1){
+			$.get("var_func.php?act=grafv",{vari: $('#var_var').val()},
+				function(resp){
+					//alert(resp);
+					var obj=JSON.parse(resp);
+					grafico_bat($('#var_var').val(),$('#var_periodo').val(),$('#var_graf'),obj['titulo'],obj['nome'],obj['unidade']);
+					//alert(obj['unidade']);
+					});
+			}
+		});
+	$('#var_var1').change(function(){
+		//alert("oi");
+		//grafico_bat($('#var_var').val(),1,'minute',6,$('#var_graf'));
+		var qtd=$('#var_qtd').val();
+		if(qtd==2){
+		//alert("ola");
+			$.get("var_func.php?act=grafv",{vari: $('#var_var').val()},
+				function(resp){
+					//alert(resp);
+					var obj=JSON.parse(resp);
+					var titulo=obj['titulo'];
+					var nome1=obj['nome'];
+					//alert(nome1);
+					var unidade=obj['unidade'];
+					$.get("var_func.php?act=grafv",{vari: $('#var_var1').val()},
+						function(resp){
+							var obj=JSON.parse(resp);
+							var nome2=obj['nome'];
+							//alert(nome2);
+							//alert("teste1");
+							grafico2($('#var_var').val(),$('#var_var1').val(),$('#var_periodo').val(),$('#var_graf'),titulo,unidade,nome1,nome2,$('#var_loader'));
+							});
+					});
+			}
+		});
+	$('#var_periodo').change(function(){
+		var periodo=$('#var_periodo').val();
+		var qtd=$('#var_qtd').val();
+		if(qtd==1){
+			$.get("var_func.php?act=grafv",{vari: $('#var_var').val()},
+			function(resp){
+				var obj=JSON.parse(resp);
+				grafico_bat($('#var_var').val(),periodo,$('#var_graf'),obj['titulo'],obj['nome'],obj['unidade']);
+				});
+			}
+		if(qtd==2){
+			$.get("var_func.php?act=grafv",{vari: $('#var_var').val()},
+				function(resp){
+					var obj=JSON.parse(resp);
+					var titulo=obj['titulo'];
+					var nome1=obj['nome'];
+					var unidade=obj['unidade'];
+					$.get("var_func.php?act=grafv",{vari: $('#var_var1').val()},
+						function(resp){
+							var obj=JSON.parse(resp);
+							var nome2=obj['nome'];
+							grafico2($('#var_var').val(),$('#var_var1').val(),$('#var_periodo').val(),$('#var_graf'),titulo,unidade,nome1,nome2,$('#var_loader'));
+							});		
+					});
+			}
+		});
+	$('#var_batu').click(function(){
+		var qtd=$('#var_qtd').val();
+		if(qtd==1){
+			$.get("var_func.php?act=grafv",{vari: $('#var_var').val()},
+			function(resp){
+				var obj=JSON.parse(resp);
+				grafico_bat($('#var_var').val(),periodo,$('#var_graf'),obj['titulo'],obj['nome'],obj['unidade']);
+				});
+			}
+		if(qtd==2){
+			$.get("var_func.php?act=grafv",{vari: $('#var_var').val()},
+				function(resp){
+					var obj=JSON.parse(resp);
+					var titulo=obj['titulo'];
+					var nome1=obj['nome'];
+					var unidade=obj['unidade'];
+					$.get("var_func.php?act=grafv",{vari: $('#var_var1').val()},
+						function(resp){
+							var obj=JSON.parse(resp);
+							var nome2=obj['nome'];
+							grafico2($('#var_var').val(),$('#var_var1').val(),$('#var_periodo').val(),$('#var_graf'),titulo,unidade,nome1,nome2,$('#var_loader'));
+							});
+					 
+					});
+			}
+		});
+});
+function varconf_ativo(id){
+	$.get("varconf_func.php?act=ativo&id="+id);
+	$('#varconf_dat').load('varconf_func.php?act=tab&disp='+$('#varconf_disp').val());
+}
+function disp_edit(id){
+	$.get("disp_func.php",{id: id,act: "nome"},
+			function(resp){
+				$('#disp_id').val(id);
+			//	alert(resp);
+				$('#disp_nome').val(resp);
+				});
+				
+}
+function varconf_edit(id){
+	$('#varconf_id').val(id);
+	$.get("varconf_func.php?act=edit",{
+					id:	id},function(resp){
+						var obj=JSON.parse(resp);
+						$('#varconf_tempo').val(obj['tempo']);
+						$('#varconf_nome').val(obj['nome']);
+						$('#varconf_media').val(obj['media']);
+					});
+	}
+function varconf_del(id){
+	$.get('varconf_func.php?act=del&id='+id,function(){
+		$('#varconf_dat').load('varconf_func.php?act=tab&disp='+$('#varconf_disp').val());
+	});
+	
+}
+
+//function grafico
+</script>
+</head>
+<body>
+<table align=center border=0 width=100%>
+<tr><td align=center>
+<h1><a href='#' id=disp_m>Dispositivos</a> |
+<a href='#' id=varconf_m >Configuracao Variaveis</a> |
+<a href='#' id=conf_out>Configuracao Saidas</a> |
+<a href='#' id=conf_ent>Configuracao Entrada</a> |
+<a href='#' id=conf_func>Configuracao Funcao</a> |
+<a href='#' id=var_m >Variaveis</a></h1>
+</td></tr>
+<tr>
+<td align=center>
+<hr>
+<div id='disp_tab'>
+	<table border=0>
+	<tr>
+	<td>
+	Nome:<input type=text id=disp_nome><input type=button id=disp_salva value=Salvar>
+	<input type=hidden id=disp_id>
+	</td>
+	</tr>
+	<tr>
+	<td>
+	<div id=disp_dat></div>
+	</td></tr>
+	<tr><td align=center>
+	<input type='button' id='disp_atu' value='Atualizar'>
+	</td></tr></table>
+</div>
+<div id=varconf_tab>
+
+<table border=0 width=100%>
+<tr>
+<td align=center>
+<div id=varconf_form>
+<table border=0>
+<tr>
+<td>Dispositivo:</td>
+<td><select id=varconf_disp></select></td>
+<td>Nome:</td>
+<td><input type=text size=10 id=varconf_nome></td>
+</tr><tr>
+<td>Tempo</td>
+<td colspan=2><input type=text size=2 id=varconf_tempo>(min)</td>
+<td><input type=button id=varconf_salva value=Salvar></td></tr>
+<tr><td colspan=4 align=center><input type=button id=varconf_bbusc value="Buscar"></td>
+</tr><tr>
+<td colspan=2>Medias</td>
+<td><input type="text" id=varconf_media></td></tr>
+<input type=hidden id=varconf_id>
+</table>
+</div>
+</td>
+</tr>
+<tr><td align=center><div id=varconf_dat></div></td></tr>
+</table></div>
+<div id='var_tab'>
+<table border=0 width=100%>
+<tr><td align=center>
+<h1>Graficos</h1>
+</td></tr>
+<tr><td align=center>
+<table>
+<tr><td align=right>Dispositivo:</td><td><select id=var_disp></select></td>
+<td align="right">Qtd Variaveis:</td><td><select id=var_qtd></select></td>
+<td align=right>Variavel:</td><td><select id=var_var></select></td>
+<td align=right>Variavel 1:</td><td><select id=var_var1></select></td>
+</tr>
+<tr><td>Periodo</td><td colspan=3>
+<select id=var_periodo>
+<option value=1 selected>Ultima hora</option>
+<option value=6>Ultimas duas horas</option>
+<option value=7>Ultimas 6 horas</option>
+<option value=2>Ultimas 12h</option>
+<option value=3>Ultimas 24h</option>
+<option value=4>Ultima semana</option>
+<option value=5>Ultimo mes</option>
+</select>
+</td>
+</tr>
+</table>
+</td></tr>
+<tr><td align=center>
+<div id="var_loader"></div>
+<div id=var_graf style="width:75%; height:600px"></div>
+<input type=button id=var_batu value=Atualizar>
+</td></tr>
+</table>
+</div>
+</td>
+</tr>
+</table>
+</body>
+</html>
